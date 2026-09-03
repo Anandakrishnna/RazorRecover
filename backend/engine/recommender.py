@@ -140,7 +140,7 @@ Respond ONLY in valid JSON format:
                 from google import genai
                 client = genai.Client(api_key=self.api_key)
                 text = None
-                for model_name in ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash"]:
+                for model_name in ["gemini-flash-latest", "gemini-3.6-flash", "gemini-2.5-flash"]:
                     try:
                         response = client.models.generate_content(
                             model=model_name,
