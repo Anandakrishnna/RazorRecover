@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RazorRecover — Interactive System Architecture</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --panel-bg: rgba(18, 26, 43, 0.75);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-purple: #9b51e0;
+      --accent-green: #00e676;
+      --accent-orange: #ff9100;
+      --accent-red: #ff5252;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Styling */
+    header {
+      padding: 1.5rem 2rem;
+      background: rgba(11, 15, 25, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #0b0f19;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-cyan);
+      transform: translateY(-1px);
+    }
+
+    /* Main Content Layout */
+    .main-container {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+
+    .diagram-viewport {
+      flex: 1;
+      padding: 3rem 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Side Detail Drawer */
+    .detail-drawer {
+      width: 380px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid var(--panel-border);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .drawer-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .detail-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    .detail-val {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .code-tag {
+      font-family: monospace;
+      background: rgba(0, 242, 254, 0.1);
+      color: var(--accent-cyan);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* Canvas Architecture Layout */
+    .canvas {
+      width: 100%;
+      max-width: 1100px;
+      position: relative;
+    }
+
+    /* Node Styling */
+    .node-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2.5rem 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .node {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .node:hover {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+      transform: translateY(-4px);
+    }
+
+    .node.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.08);
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .node-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .node-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .node-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Specific Accent Colors per Node Type */
+    .node-webhook .node-icon { background: rgba(255, 145, 0, 0.15); color: var(--accent-orange); }
+    .node-classifier .node-icon { background: rgba(79, 172, 254, 0.15); color: var(--accent-blue); }
+    .node-model .node-icon { background: rgba(155, 81, 224, 0.15); color: var(--accent-purple); }
+    .node-policy .node-icon { background: rgba(255, 82, 82, 0.15); color: var(--accent-red); }
+    .node-llm .node-icon { background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan); }
+    .node-executor .node-icon { background: rgba(0, 230, 118, 0.15); color: var(--accent-green); }
+    .node-db .node-icon { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    /* SVG Connections */
+    .connections-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    path.connector {
+      fill: none;
+      stroke: rgba(0, 242, 254, 0.3);
+      stroke-width: 2;
+      stroke-dasharray: 6 6;
+      animation: dash 30s linear infinite;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -1000;
+      }
+    }
+
+    /* Flow Pulse Particles */
+    circle.particle {
+      fill: var(--accent-cyan);
+      filter: drop-shadow(0 0 6px var(--accent-cyan));
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <span class="badge">Archify Interactive</span>
+      <h1>RazorRecover — Autonomous Agent Architecture</h1>
+    </div>
+    <div class="controls">
+      <button class="btn" id="toggle-motion">⚡ Motion: ON</button>
+      <button class="btn" id="reset-view">🔄 Reset Selection</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="diagram-viewport">
+      <div class="canvas">
+        <div class="node-grid">
+
+          <!-- Row 1 -->
+          <div class="node node-webhook" onclick="selectNode('webhook')">
+            <div class="node-header">
+              <div class="node-icon">📥</div>
+              <div class="node-title">Failure Webhook</div>
+            </div>
+            <div class="node-desc">Ingests merchant payment failure payloads.</div>
+          </div>
+
+          <div class="node node-classifier" onclick="selectNode('monitor')">
+            <div class="node-header">
+              <div class="node-icon">🛡️</div>
+              <div class="node-title">Revenue Monitor</div>
+            </div>
+            <div class="node-desc">Flags revenue-at-risk & initializes RecoveryCase.</div>
+          </div>
+
+          <div class="node node-classifier" onclick="selectNode('classifier')">
+            <div class="node-header">
+              <div class="node-icon">🔍</div>
+              <div class="node-title">Root Cause Classifier</div>
+            </div>
+            <div class="node-desc">Diagnoses 1 of 6 failure taxonomy categories.</div>
+          </div>
+
+          <div class="node node-model" onclick="selectNode('model')">
+            <div class="node-header">
+              <div class="node-icon">📈</div>
+              <div class="node-title">Recovery Probability</div>
+            </div>
+            <div class="node-desc">Computes P(recovery) [0.05, 0.95] & Expected Value.</div>
+          </div>
+
+          <!-- Row 2 -->
+          <div class="node node-llm" onclick="selectNode('llm')">
+            <div class="node-header">
+              <div class="node-icon">🤖</div>
+              <div class="node-title">Gemini LLM Recommender</div>
+            </div>
+            <div class="node-desc">Proposes intervention & natural reasoning text.</div>
+          </div>
+
+          <div class="node node-policy" onclick="selectNode('policy')">
+            <div class="node-header">
+              <div class="node-icon">⚔️</div>
+              <div class="node-title">Policy Engine</div>
+            </div>
+            <div class="node-desc">Deterministic Safety Shield (Rules #1–#13).</div>
+          </div>
+
+          <div class="node node-executor" onclick="selectNode('executor')">
+            <div class="node-header">
+              <div class="node-icon">⚙️</div>
+              <div class="node-title">Tool Executor</div>
+            </div>
+            <div class="node-desc">Dispatches payment, messaging, or escalation APIs.</div>
+          </div>
+
+          <div class="node node-executor" onclick="selectNode('verifier')">
+            <div class="node-header">
+              <div class="node-icon">✅</div>
+              <div class="node-title">Verifier Engine</div>
+            </div>
+            <div class="node-desc">Simulates probabilistic outcome verification rolls.</div>
+          </div>
+
+          <!-- Row 3 -->
+          <div class="node node-db" onclick="selectNode('db')">
+            <div class="node-header">
+              <div class="node-icon">🗄️</div>
+              <div class="node-title">SQLite Audit Log DB</div>
+            </div>
+            <div class="node-desc">Stores cases, decisions, & immutable audit trails.</div>
+          </div>
+
+          <div class="node node-classifier" onclick="selectNode('fastapi')">
+            <div class="node-header">
+              <div class="node-icon">🚀</div>
+              <div class="node-title">FastAPI Service Layer</div>
+            </div>
+            <div class="node-desc">REST endpoints (/events, /cases, /metrics).</div>
+          </div>
+
+          <div class="node node-llm" onclick="selectNode('dashboard')">
+            <div class="node-header">
+              <div class="node-icon">🖥️</div>
+              <div class="node-title">React Dashboard UI</div>
+            </div>
+            <div class="node-desc">KPI header, sorted queue, & "Why?" modal.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Side Detail Drawer -->
+    <div class="detail-drawer" id="drawer">
+      <div class="drawer-title" id="drawer-title">Click any component</div>
+      
+      <div class="detail-card">
+        <div class="detail-label">File Implementation</div>
+        <div class="detail-val" id="drawer-file">Select a node to inspect code details.</div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-label">Primary Responsibility</div>
+        <div class="detail-val" id="drawer-resp">Click any architecture box in the canvas to see its exact role in the revenue recovery pipeline.</div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-label">Safety Invariants / Guarantees</div>
+        <div class="detail-val" id="drawer-guarantee">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const nodeDetails = {
+      webhook: {
+        title: "📥 Failure Webhook Ingestion",
+        file: "backend/api/routes/events.py",
+        resp: "Receives real-time payment failure notifications from payment gateways (card_expired, insufficient_funds, network_timeout, overdue_invoice, intent_abandoned).",
+        guarantee: "Payload validation via Pydantic model with automatic timestamping."
+      },
+      monitor: {
+        title: "🛡️ Revenue Monitor Engine",
+        file: "backend/engine/revenue_monitor.py",
+        resp: "Evaluates whether incoming event represents genuine revenue-at-risk. Creates persistent RecoveryCase record in SQLite DB.",
+        guarantee: "Suppresses duplicate transactions and self-healing minor dropouts."
+      },
+      classifier: {
+        title: "🔍 Root Cause Classifier",
+        file: "backend/engine/classifier.py",
+        resp: "Uses hybrid rule taxonomy to categorize failure root cause with confidence score [0.0 - 1.0].",
+        guarantee: "100% deterministic taxonomy classification for known failure codes."
+      },
+      model: {
+        title: "📈 Recovery Probability Model",
+        file: "backend/engine/recovery_model.py",
+        resp: "Predicts recovery probability and computes Expected Recovery Value (ERV = Amount × Probability).",
+        guarantee: "Probability strictly bounded within [0.05, 0.95]. No recovery is 100% guaranteed or 0% impossible."
+      },
+      llm: {
+        title: "🤖 Gemini LLM Recommender",
+        file: "backend/engine/recommender.py",
+        resp: "Invokes Google Gemini AI (gemini-2.5-flash / gemini-3.6-flash) to propose recovery actions and natural language reasoning text.",
+        guarantee: "Includes offline mock fallback circuit breaker if API quota or network fails."
+      },
+      policy: {
+        title: "⚔️ Deterministic Policy Engine",
+        file: "backend/engine/policy_engine.py",
+        resp: "HARD SAFETY SHIELD gating all LLM proposals against 13 strict business rules.",
+        guarantee: "Zero policy violations. LLM cannot execute forbidden retries, breach cooldowns, or ignore caps."
+      },
+      executor: {
+        title: "⚙️ Tool Executor Engine",
+        file: "backend/engine/executor.py",
+        resp: "Dispatches approved interventions through simulated Payment, Messaging, and Escalation APIs.",
+        guarantee: "Respects rate limits and logs every dispatch ID to audit log."
+      },
+      verifier: {
+        title: "✅ Verifier Engine",
+        file: "backend/engine/verifier.py",
+        resp: "Simulates probabilistic outcome verification rolls based on PRD Section 10.1 specs.",
+        guarantee: "Closes cases deterministically as RECOVERED, FAILED, ESCALATED, or STOPPED."
+      },
+      db: {
+        title: "🗄️ SQLite Database & Audit Log",
+        file: "backend/db/models.py & audit.py",
+        resp: "Centralized relational database storing merchants, cases, decisions, and immutable audit logs.",
+        guarantee: "UUID primary keys prevent ID collisions across pipeline runs."
+      },
+      fastapi: {
+        title: "🚀 FastAPI REST API Layer",
+        file: "backend/api/main.py",
+        resp: "Provides REST endpoints (/events/ingest, /cases, /cases/{id}, /metrics/eval) with CORS support.",
+        guarantee: "Automatic OpenAPI documentation available at /docs."
+      },
+      dashboard: {
+        title: "🖥️ React Single-Page Dashboard",
+        file: "frontend/dashboard/src/App.jsx",
+        resp: "Real-time dashboard showing KPI cards, sorted case queue table, and side-by-side 'Why?' decision modal.",
+        guarantee: "Direct live connection to running FastAPI backend."
+      }
+    };
+
+    function selectNode(key) {
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+      const info = nodeDetails[key];
+      if (!info) return;
+
+      document.getElementById('drawer-title').innerText = info.title;
+      document.getElementById('drawer-file').innerHTML = `<span class="code-tag">${info.file}</span>`;
+      document.getElementById('drawer-resp').innerText = info.resp;
+      document.getElementById('drawer-guarantee').innerText = info.guarantee;
+    }
+
+    document.getElementById('reset-view').addEventListener('click', () => {
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+      document.getElementById('drawer-title').innerText = "Click any component";
+      document.getElementById('drawer-file').innerText = "Select a node to inspect code details.";
+      document.getElementById('drawer-resp').innerText = "Click any architecture box in the canvas to see its exact role in the revenue recovery pipeline.";
+      document.getElementById('drawer-guarantee').innerText = "—";
+    });
+  </script>
+</body>
+</html>

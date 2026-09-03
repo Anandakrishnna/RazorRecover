@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archify — POST /events/ingest Request Lifecycle</title>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --panel-bg: rgba(17, 24, 39, 0.85);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --cyan: #00f2fe;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --pink: #ec4899;
+      --text: #f3f4f6;
+      --text-sub: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.25rem 2rem;
+      background: rgba(9, 13, 22, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #090d16;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .container {
+      display: flex;
+      flex: 1;
+    }
+
+    .seq-view {
+      flex: 1;
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .lifelines-header {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .lifeline-node {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .lifeline-node .name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .lifeline-node .file {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      font-family: monospace;
+    }
+
+    /* Sequence Flow Steps */
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .step-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: grid;
+      grid-template-columns: 80px 1fr 140px;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .step-card:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+      transform: translateX(4px);
+    }
+
+    .step-card.active {
+      border-color: var(--cyan);
+      background: rgba(0, 242, 254, 0.06);
+    }
+
+    .step-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 242, 254, 0.1);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .step-info .title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .step-info .desc {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    .step-meta {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-sub);
+      text-align: center;
+      font-family: monospace;
+    }
+
+    /* Side Inspector Drawer */
+    .inspector {
+      width: 400px;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--panel-border);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .inspector-header {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .inspect-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .inspect-label {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    pre {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #a7f3d0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <span class="badge">Archify Lifecycle</span>
+      <h1>POST /events/ingest — End-to-End Sequence Flow</h1>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="seq-view">
+      
+      <div class="lifelines-header">
+        <div class="lifeline-node" style="border-top:3px solid var(--orange);">
+          <div class="name">🌐 Merchant Client</div>
+          <div class="file">HTTP Webhook Sender</div>
+        </div>
+        <div class="lifeline-node" style="border-top:3px solid var(--blue);">
+          <div class="name">🚀 FastAPI Router</div>
+          <div class="file">routes/events.py</div>
+        </div>
+        <div class="lifeline-node" style="border-top:3px solid var(--purple);">
+          <div class="name">🧠 Agent Loop</div>
+          <div class="file">agent_loop.py</div>
+        </div>
+        <div class="lifeline-node" style="border-top:3px solid var(--green);">
+          <div class="name">🗄️ SQLite DB</div>
+          <div class="file">data/razorrecover.db</div>
+        </div>
+        <div class="lifeline-node" style="border-top:3px solid var(--pink);">
+          <div class="name">📊 React Dashboard</div>
+          <div class="file">src/App.jsx</div>
+        </div>
+      </div>
+
+      <div class="steps-container">
+
+        <div class="step-card" onclick="inspectStep(1)">
+          <div class="step-num">1</div>
+          <div class="step-info">
+            <div class="title">HTTP POST Request Ingestion</div>
+            <div class="desc">Client posts JSON payload containing transaction_id, failure_type, amount, and customer details.</div>
+          </div>
+          <div class="step-meta">200 OK Response</div>
+        </div>
+
+        <div class="step-card" onclick="inspectStep(2)">
+          <div class="step-num">2</div>
+          <div class="step-info">
+            <div class="title">Pydantic Model Validation & DB Session Injection</div>
+            <div class="desc">FastAPI validates EventIngestRequest and injects SQLModel DB session.</div>
+          </div>
+          <div class="step-meta">EventIngestRequest</div>
+        </div>
+
+        <div class="step-card" onclick="inspectStep(3)">
+          <div class="step-num">3</div>
+          <div class="step-info">
+            <div class="title">Full Autonomous Pipeline Execution</div>
+            <div class="desc">Executes Revenue Monitor → Root Cause Classifier → Recovery Model → Gemini LLM Recommender → Policy Engine → Tool Executor → Verifier Engine.</div>
+          </div>
+          <div class="step-meta">run_agent_pipeline</div>
+        </div>
+
+        <div class="step-card" onclick="inspectStep(4)">
+          <div class="step-num">4</div>
+          <div class="step-info">
+            <div class="title">Database Commit & Audit Log Persistence</div>
+            <div class="desc">Persists RecoveryCase, AgentDecision, and step-by-step AuditLog entries, invoking db.commit().</div>
+          </div>
+          <div class="step-meta">db.commit()</div>
+        </div>
+
+        <div class="step-card" onclick="inspectStep(5)">
+          <div class="step-num">5</div>
+          <div class="step-info">
+            <div class="title">Real-Time Metric & Case Queue Update</div>
+            <div class="desc">React Dashboard polls /cases or /metrics/summary and re-renders KPI cards and case table sorted by ERV.</div>
+          </div>
+          <div class="step-meta">UI State Update</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="inspector">
+      <div class="inspector-header" id="inspect-title">Select any step</div>
+
+      <div class="inspect-box">
+        <div class="inspect-label">Payload / Code Invocation</div>
+        <pre id="inspect-code">Click on step 1 to 5 to inspect payload details.</pre>
+      </div>
+
+      <div class="inspect-box">
+        <div class="inspect-label">Key Invariant / Guarantee</div>
+        <div id="inspect-guarantee" style="font-size:0.85rem; color:var(--text-sub);">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const stepsData = {
+      1: {
+        title: "Step 1: HTTP POST /events/ingest",
+        code: `POST /events/ingest HTTP/1.1\nContent-Type: application/json\n\n{\n  "transaction_id": "tx_demo_99",\n  "failure_type": "card_expired",\n  "amount": 4500.00,\n  "customer_id": "cust_88"\n}`,
+        guarantee: "Webhooks are ingested asynchronously with instant validation."
+      },
+      2: {
+        title: "Step 2: FastAPI Pydantic Validation",
+        code: `@router.post("/events/ingest")\ndef ingest_event(\n    payload: EventIngestRequest,\n    session: Session = Depends(get_session)\n):`,
+        guarantee: "Prevents malformed parameters before pipeline execution."
+      },
+      3: {
+        title: "Step 3: Autonomous Agent Loop",
+        code: `trace = run_agent_pipeline(\n  event_dict=payload.model_dump(),\n  session=session\n)`,
+        guarantee: "Policy Engine gates LLM proposals — ZERO policy violations permitted."
+      },
+      4: {
+        title: "Step 4: SQLite Database Commit",
+        code: `session.add(case)\nsession.add(decision)\nAuditLogger.log_event(session, case.id, ...)\nsession.commit()`,
+        guarantee: "Guarantees transactional integrity across case creation & audit logs."
+      },
+      5: {
+        title: "Step 5: Dashboard Metric Re-render",
+        code: `GET /cases -> Returns cases sorted by expected_recovery_value DESC\nUI computes Revenue at Risk, Recovered Revenue, & Recovery Rate %`,
+        guarantee: "Real-time visibility into active interventions & side-by-side 'Why?' decision rationale."
+      }
+    };
+
+    function inspectStep(num) {
+      document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+      const data = stepsData[num];
+      if (!data) return;
+
+      document.getElementById('inspect-title').innerText = data.title;
+      document.getElementById('inspect-code').innerText = data.code;
+      document.getElementById('inspect-guarantee').innerText = data.guarantee;
+    }
+  </script>
+</body>
+</html>
