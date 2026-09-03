@@ -1,0 +1,27 @@
+{
+  "evaluation_metadata": {
+    "timestamp": "2026-09-03T03:55:09.216137+00:00",
+    "dataset_file": "data/events_holdout.csv",
+    "total_heldout_events": 200,
+    "status": "UN_TUNED_FINAL_EVALUATION"
+  },
+  "financial_metrics": {
+    "revenue_at_risk_inr": 4827162.63,
+    "potentially_recoverable_inr": 2836009.25,
+    "successfully_recovered_inr": 2025090.68,
+    "recovery_rate_pct": 41.95
+  },
+  "agent_performance_metrics": {
+    "total_interventions_executed": 144,
+    "unnecessary_interventions_count": 10,
+    "unnecessary_interventions_pct": 6.94,
+    "policy_violations_count": 0,
+    "target_policy_violations": 0
+  },
+  "case_outcomes_breakdown": {
+    "recovered_cases": 81,
+    "failed_cases": 63,
+    "escalated_cases": 21,
+    "stopped_cases": 35
+  }
+}
