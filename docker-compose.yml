@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  razorrecover:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: razorrecover_app
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      # Preserve SQLite database between container rebuilds
+      - razorrecover_data:/app/data_persist
+    restart: unless-stopped
+
+volumes:
+  razorrecover_data:

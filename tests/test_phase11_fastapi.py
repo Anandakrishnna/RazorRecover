@@ -27,7 +27,7 @@ class TestPhase11FastAPI(unittest.TestCase):
         app.dependency_overrides.clear()
 
     def test_health_check(self):
-        response = self.client.get("/")
+        response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["status"], "HEALTHY")

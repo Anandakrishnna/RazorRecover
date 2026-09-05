@@ -1,0 +1,17 @@
+# Docker Ignore File for RazorRecover
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+frontend/dashboard/node_modules/
+frontend/dashboard/dist/
+frontend/dashboard/.oxlintrc.json
+.vscode/
+.gemini/
+brain/
+scratch/
+*.db
